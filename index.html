@@ -13,13 +13,14 @@
         .logo-text { font-size: 1.5rem; font-weight: 900; letter-spacing: 2px; }
         .screen-box { max-width: 1000px; margin: 30px auto; background: #fff; padding: 30px; border-radius: 10px; box-shadow: 0 5px 20px rgba(0,0,0,0.1); }
         
+        /* Exam UI */
         #exam-wrapper { display: none; height: 100vh; flex-direction: column; background: #fff; }
         .exam-header { background: #2c3e50; color: white; padding: 8px 15px; display: flex; justify-content: space-between; align-items: center; }
         .exam-main { display: flex; flex: 1; overflow: hidden; }
         .q-area { flex: 1; padding: 20px; overflow-y: auto; }
         .p-area { width: 280px; background: #f1f3f5; border-left: 1px solid #ddd; display: flex; flex-direction: column; padding: 10px; }
         
-        /* Fixed Question Text to maintain line breaks for Matching */
+        /* Fixed Question Text to maintain line breaks */
         .q-text { font-size: 1.1rem; font-weight: 600; margin-bottom: 20px; line-height: 1.6; white-space: pre-wrap; }
 
         .palette-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; flex: 1; overflow-y: auto; align-content: start; }
@@ -34,7 +35,11 @@
         input[type="radio"]:checked + .option-label, input[type="checkbox"]:checked + .option-label { background: #e3f2fd; border-color: var(--primary); font-weight: bold; }
         input[type="radio"], input[type="checkbox"] { display: none; }
 
-        #cam-feed { position: fixed; bottom: 10px; right: 10px; width: 150px; border-radius: 10px; border: 3px solid var(--secondary); z-index: 1000; transform: scaleX(-1); display: none; }
+        /* Camera Proctoring Overlay */
+        #cam-container { position: fixed; bottom: 10px; right: 10px; z-index: 1000; display: none; }
+        #cam-feed { width: 160px; border-radius: 10px; border: 3px solid var(--secondary); transform: scaleX(-1); }
+        #rec-badge { position: absolute; top: 10px; left: 10px; background: rgba(255,0,0,0.8); color: white; padding: 2px 8px; border-radius: 5px; font-size: 0.7rem; font-weight: bold; animation: blink 1s infinite; }
+        @keyframes blink { 0% { opacity: 1; } 50% { opacity: 0.5; } 100% { opacity: 1; } }
         
         .result-header { text-align: center; border-bottom: 2px dashed #ccc; padding-bottom: 15px; margin-bottom: 20px; }
         .candidate-info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; font-size: 0.95rem; margin-bottom: 20px; background: #f8f9fa; padding: 15px; border-radius: 8px; }
@@ -45,7 +50,7 @@
         .pass-badge.pass { background: #e8f5e9; color: #2e7d32; border: 2px solid #2e7d32; }
         .pass-badge.fail { background: #ffebee; color: #c62828; border: 2px solid #c62828; }
         
-        .warning-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(255,0,0,0.8); color: white; display: none; flex-direction: column; align-items: center; justify-content: center; z-index: 9999; text-align: center; }
+        .warning-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(255,0,0,0.85); color: white; display: none; flex-direction: column; align-items: center; justify-content: center; z-index: 9999; text-align: center; }
     </style>
 </head>
 <body>
@@ -62,7 +67,10 @@
     <div>Official Computer Based Test (CBT) Portal</div>
 </div>
 
-<video id="cam-feed" autoplay muted></video>
+<div id="cam-container">
+    <div id="rec-badge">🔴 REC</div>
+    <video id="cam-feed" autoplay muted></video>
+</div>
 
 <!-- ================= STEP 1: ADMIN PANEL ================= -->
 <div id="admin-screen" class="screen-box">
@@ -72,8 +80,13 @@
             <div class="card p-3 shadow-sm">
                 <h5>Create New Paper</h5>
                 <input type="text" id="paper-name" class="form-control mb-2" placeholder="Paper Name (e.g. SSC CGL 2024)">
-                <label class="small fw-bold">Exam Start Time (Strict Entry)</label>
-                <input type="datetime-local" id="paper-time" class="form-control mb-2">
+                
+                <div class="form-check mb-2">
+                    <input class="form-check-input" type="checkbox" id="paper-strict" onchange="toggleStrictMode()">
+                    <label class="form-check-label small fw-bold" for="paper-strict">Enforce Fixed Start Time (Strict Mode)</label>
+                </div>
+                <input type="datetime-local" id="paper-time" class="form-control mb-2" style="display:none;">
+                
                 <textarea id="paper-text" class="form-control mb-2" rows="4" placeholder="Paste questions here..."></textarea>
                 <input type="file" id="paper-file" class="form-control mb-2" accept=".txt" onchange="loadFileText(this)">
                 <button class="btn btn-primary w-100" onclick="savePaper()">Save Paper</button>
@@ -113,7 +126,7 @@
                 <div class="col-md-6"><label class="small fw-bold">Negative Marking</label><select id="reg-negative" class="form-select"><option value="0">None</option><option value="0.25">-0.25</option><option value="0.33">-1/3</option></select></div>
             </div>
         </div>
-        <div class="col-md-5 text-center">
+        <div class="col-md-5 text-center" id="verification-box">
             <div class="card p-3 shadow-sm mb-3">
                 <h6>Live Photo Capture</h6>
                 <button class="btn btn-outline-danger mb-2" onclick="capturePhoto()">📷 Capture Photo</button>
@@ -122,6 +135,12 @@
             <div class="card p-3 shadow-sm">
                 <h6>Upload Admit Card</h6>
                 <input type="file" id="reg-admit" class="form-control" accept="image/*" onchange="previewAdmit(this)">
+            </div>
+        </div>
+        <div class="col-md-5 text-center d-none" id="saved-verification-box">
+            <div class="alert alert-success mt-3">
+                <h5>✅ Candidate Verified</h5>
+                <p class="mb-0 small">Photo & Admit Card loaded from saved profile.</p>
             </div>
         </div>
     </div>
@@ -149,7 +168,6 @@
     <div class="exam-main">
         <div class="q-area">
             <div class="text-muted small mb-2 text-uppercase fw-bold" id="ui-section">SECTION</div>
-            <!-- ADDED white-space: pre-wrap to the q-text class above -->
             <div class="q-text" id="ui-question">Question...</div>
             <div id="ui-options"></div>
         </div>
@@ -185,15 +203,11 @@
         <div><strong>Exam Name:</strong> <span id="res-exam"></span></div>
     </div>
     <table class="score-table">
-        <thead>
-            <tr><th>Total Qs</th><th>Correct</th><th>Wrong</th><th>Unattempted</th><th>Final Score</th></tr>
-        </thead>
+        <thead><tr><th>Total Qs</th><th>Correct</th><th>Wrong</th><th>Unattempted</th><th>Final Score</th></tr></thead>
         <tbody>
             <tr>
-                <td id="res-total">0</td>
-                <td class="text-success fw-bold" id="res-correct">0</td>
-                <td class="text-danger fw-bold" id="res-wrong">0</td>
-                <td class="text-warning fw-bold" id="res-skip">0</td>
+                <td id="res-total">0</td><td class="text-success fw-bold" id="res-correct">0</td>
+                <td class="text-danger fw-bold" id="res-wrong">0</td><td class="text-warning fw-bold" id="res-skip">0</td>
                 <td class="fw-bold fs-5" id="res-score">0.00</td>
             </tr>
         </tbody>
@@ -251,6 +265,11 @@ function showScreen(id) {
 }
 
 // --- 1. ADMIN ---
+function toggleStrictMode() {
+    let isStrict = document.getElementById('paper-strict').checked;
+    document.getElementById('paper-time').style.display = isStrict ? 'block' : 'none';
+}
+
 function renderPaperList() {
     let ul = document.getElementById('paper-list');
     let sel = document.getElementById('reg-paper-select');
@@ -259,7 +278,8 @@ function renderPaperList() {
     if(keys.length === 0) { ul.innerHTML = '<li class="list-group-item text-muted">No papers saved yet.</li>'; return; }
     
     keys.forEach(k => {
-        let timeStr = savedPapers[k].slotTime ? new Date(savedPapers[k].slotTime).toLocaleString() : 'No fixed time';
+        let paper = savedPapers[k];
+        let timeStr = paper.isStrict ? new Date(paper.slotTime).toLocaleString() : 'Flexible (Anytime)';
         ul.innerHTML += `<li class="list-group-item d-flex justify-content-between align-items-center">
             <div><strong>${k}</strong> <br><small class="text-muted">Start: ${timeStr}</small></div>
             <button class="btn btn-sm btn-outline-danger" onclick="deletePaper('${k}')">🗑</button></li>`;
@@ -277,13 +297,20 @@ function loadFileText(input) {
 function savePaper() {
     let name = document.getElementById('paper-name').value.trim();
     let text = document.getElementById('paper-text').value.trim();
-    let time = document.getElementById('paper-time').value;
+    let isStrict = document.getElementById('paper-strict').checked;
+    let time = isStrict ? document.getElementById('paper-time').value : null;
+    
     if(!name || !text) return alert("Enter paper name and questions.");
+    if(isStrict && !time) return alert("Set the strict time or uncheck strict mode.");
     
     let parsedQs = parseTextFile(text);
     if(parsedQs.length === 0) return alert("Formatting error. Could not parse questions.");
     
-    savedPapers[name] = { questions: parsedQs, slotTime: time ? new Date(time).getTime() : null };
+    savedPapers[name] = { 
+        questions: parsedQs, 
+        isStrict: isStrict,
+        slotTime: isStrict ? new Date(time).getTime() : null 
+    };
     localStorage.setItem('jm_papers', JSON.stringify(savedPapers));
     document.getElementById('paper-name').value = ''; document.getElementById('paper-text').value = '';
     renderPaperList();
@@ -295,13 +322,11 @@ function deletePaper(name) {
     delete savedPapers[name]; localStorage.setItem('jm_papers', JSON.stringify(savedPapers)); renderPaperList();
 }
 
-// --- FIXED PARSER ---
 function parseTextFile(text) {
     let qs = []; let lines = text.split('\n');
     let section = "General", type = "MCQ", currentQ = null;
 
     lines.forEach(line => {
-        // FIX: Remove trailing backslashes and trim spaces
         line = line.trim().replace(/\\$/, '').trim();
         if(!line) return;
 
@@ -311,19 +336,10 @@ function parseTextFile(text) {
             if(currentQ && currentQ.text) qs.push(currentQ);
             currentQ = { section, type, text: line.replace('Q:', '').trim(), options: [], answer: "", explanation: "" };
         }
-        else if(line.match(/^[A-J]\)/)) { 
-            if(currentQ) currentQ.options.push(line.substring(2).trim()); 
-        }
-        else if(line.startsWith('ANS:')) { 
-            if(currentQ) currentQ.answer = line.replace('ANS:', '').trim().toUpperCase(); 
-        }
-        else if(line.startsWith('EXP:')) { 
-            if(currentQ) currentQ.explanation = line.replace('EXP:', '').trim(); 
-        }
-        else if (currentQ && currentQ.text && !currentQ.answer) {
-            // If the line is part of the question text (like List-I, List-II)
-            currentQ.text += "\n" + line;
-        }
+        else if(line.match(/^[A-J]\)/)) { if(currentQ) currentQ.options.push(line.substring(2).trim()); }
+        else if(line.startsWith('ANS:')) { if(currentQ) currentQ.answer = line.replace('ANS:', '').trim().toUpperCase(); }
+        else if(line.startsWith('EXP:')) { if(currentQ) currentQ.explanation = line.replace('EXP:', '').trim(); }
+        else if (currentQ && currentQ.text && !currentQ.answer) { currentQ.text += "\n" + line; }
     });
     if(currentQ && currentQ.text) qs.push(currentQ);
     return qs;
@@ -337,12 +353,23 @@ function renderSavedCandidates() {
 }
 
 function loadCandidate(index) {
-    if(index === "") return;
+    if(index === "") {
+        document.getElementById('verification-box').classList.remove('d-none');
+        document.getElementById('saved-verification-box').classList.add('d-none');
+        return;
+    }
     let c = savedCandidates[index];
     document.getElementById('reg-name').value = c.name; document.getElementById('reg-father').value = c.father;
     document.getElementById('reg-roll').value = c.roll; document.getElementById('reg-dob').value = c.dob;
     document.getElementById('reg-gender').value = c.gender;
-    if(c.photo) { document.getElementById('reg-photo-preview').src = c.photo; document.getElementById('reg-photo-preview').style.display = 'inline-block'; }
+    
+    // Auto-load photo and admit card
+    candidate.photo = c.photo;
+    candidate.admitCard = c.admitCard || "saved.jpg"; 
+
+    // Toggle UI to show it's verified
+    document.getElementById('verification-box').classList.add('d-none');
+    document.getElementById('saved-verification-box').classList.remove('d-none');
 }
 
 function checkSlot() {
@@ -350,13 +377,23 @@ function checkSlot() {
     let btn = document.getElementById('btn-start-exam');
     let msg = document.getElementById('slot-msg');
     if(!paperName || !savedPapers[paperName]) return;
-    let slot = savedPapers[paperName].slotTime;
-    if(slot && Date.now() > slot + (15 * 60 * 1000)) { msg.style.display = 'block'; btn.disabled = true; return; }
+    
+    let paper = savedPapers[paperName];
+    // FIXED: Check if it's strict before applying time rules
+    if(paper.isStrict && paper.slotTime) {
+        if(Date.now() > paper.slotTime + (15 * 60 * 1000)) {
+            msg.style.display = 'block'; btn.disabled = true; return;
+        }
+    }
     msg.style.display = 'none'; btn.disabled = false;
 }
 
 async function initCamera() {
-    try { let stream = await navigator.mediaDevices.getUserMedia({ video: true }); video.srcObject = stream; video.style.display = 'block'; } catch(e) {}
+    try { 
+        let stream = await navigator.mediaDevices.getUserMedia({ video: true }); 
+        video.srcObject = stream; 
+        document.getElementById('cam-container').style.display = 'block'; 
+    } catch(e) { console.log("Camera error"); }
 }
 
 function capturePhoto() {
@@ -379,15 +416,30 @@ function startExamFlow() {
     negativeMark = parseFloat(document.getElementById('reg-negative').value);
     
     if(!candidate.name || !candidate.roll || !candidate.dob || !candidate.exam) return alert("Fill all details.");
-    if(!candidate.photo) return alert("Photo is mandatory.");
+    if(!candidate.photo) return alert("Photo is mandatory. Please capture or load a saved candidate.");
     if(!document.getElementById('reg-agree').checked) return alert("You must agree to terms.");
+
+    // COMPATIBILITY FIX FOR OLD PAPERS
+    let paperData = savedPapers[candidate.exam];
+    if (Array.isArray(paperData)) {
+        currentQuestions = paperData; 
+    } else {
+        currentQuestions = paperData.questions;
+    }
+    
+    if(!currentQuestions || currentQuestions.length === 0) {
+        return alert("Error: This paper has no questions. Please recreate it.");
+    }
 
     let exists = savedCandidates.find(c => c.roll === candidate.roll);
     if(!exists) { savedCandidates.push(candidate); localStorage.setItem('jm_candidates', JSON.stringify(savedCandidates)); }
 
-    currentQuestions = savedPapers[candidate.exam].questions;
-    timeLeft = dur * 60; finalCutOff = Math.ceil(currentQuestions.length * 0.4); 
-    qAnswers = {}; qStatus = new Array(currentQuestions.length).fill('not-visited'); currentIndex = 0; cheatWarnings = 0;
+    timeLeft = dur * 60; 
+    finalCutOff = Math.ceil(currentQuestions.length * 0.4); 
+    qAnswers = {}; 
+    qStatus = new Array(currentQuestions.length).fill('not-visited'); 
+    currentIndex = 0; 
+    cheatWarnings = 0;
 
     document.getElementById('ui-exam-name').innerText = candidate.exam;
     document.getElementById('ui-cand-info').innerText = `Roll: ${candidate.roll} | Name: ${candidate.name}`;
@@ -466,7 +518,8 @@ function submitExam(isAuto) {
     if(!isAuto && !confirm("Submit exam?")) return;
     clearInterval(timerInt); isExamActive = false;
     if(video.srcObject) video.srcObject.getTracks().forEach(t => t.stop());
-    video.style.display = 'none'; if (document.fullscreenElement) document.exitFullscreen().catch(e=>{});
+    document.getElementById('cam-container').style.display = 'none'; 
+    if (document.fullscreenElement) document.exitFullscreen().catch(e=>{});
 
     let score = 0, correct = 0, wrong = 0, skip = 0, reviewHtml = '';
     currentQuestions.forEach((q, i) => {
