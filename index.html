@@ -3,295 +3,340 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI Exam Hall</title>
+    <title>Professional Exam Hall</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
     <style>
-        body { background: #f4f6f9; user-select: none; }
-        .question-card { background: #fff; border-radius: 10px; padding: 20px; margin-bottom: 20px; box-shadow: 0 4px 10px rgba(0,0,0,0.05); }
-        .option-label { display: block; padding: 10px 15px; border: 1px solid #dee2e6; border-radius: 8px; margin-bottom: 10px; cursor: pointer; transition: 0.2s; }
-        .option-label:hover { background: #f0f8ff; border-color: #0d6efd; }
-        input[type="radio"]:checked + .option-label { background: #e0f0ff; border-color: #0d6efd; font-weight: bold; }
-        #camera-feed { position: fixed; bottom: 20px; right: 20px; width: 160px; border-radius: 10px; border: 3px solid #dc3545; z-index: 1000; transform: scaleX(-1); }
-        #timer-bar { position: sticky; top: 0; background: #212529; color: white; padding: 10px 20px; display: flex; justify-content: space-between; align-items: center; z-index: 999; border-radius: 0 0 10px 10px; }
-        .warning-flash { animation: flash 1s infinite; }
-        @keyframes flash { 0% { background-color: #fff; } 50% { background-color: #ffcccc; } 100% { background-color: #fff; } }
+        body { background: #e9ecef; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; user-select: none; }
+        .exam-container { max-width: 1200px; margin: 20px auto; background: #fff; border-radius: 10px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); overflow: hidden; }
+        
+        /* Header */
+        .exam-header { background: #1a237e; color: white; padding: 15px 25px; display: flex; justify-content: space-between; align-items: center; }
+        .exam-title { font-size: 1.2rem; font-weight: bold; }
+        .timer-box { background: #fff; color: #1a237e; padding: 8px 15px; border-radius: 20px; font-weight: bold; font-size: 1.1rem; display: flex; align-items: center; gap: 8px; }
+        .timer-box.warning { background: #ffebee; color: #c62828; animation: pulse 1s infinite; }
+        @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.6; } 100% { opacity: 1; } }
+
+        /* Main Layout */
+        .exam-body { display: flex; height: calc(100vh - 150px); }
+        .question-area { flex: 1; padding: 25px; overflow-y: auto; }
+        .palette-area { width: 300px; background: #f8f9fa; border-left: 1px solid #dee2e6; padding: 15px; overflow-y: auto; display: flex; flex-direction: column; }
+        
+        /* Question Styling */
+        .section-title { font-size: 1rem; color: #6c757d; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 15px; border-bottom: 2px solid #dee2e6; padding-bottom: 5px; }
+        .question-text { font-size: 1.15rem; font-weight: 600; margin-bottom: 20px; line-height: 1.6; }
+        .option-label { display: block; padding: 12px 15px; border: 2px solid #dee2e6; border-radius: 8px; margin-bottom: 10px; cursor: pointer; transition: all 0.2s; font-size: 1rem; }
+        .option-label:hover { background: #f1f3f5; border-color: #adb5bd; }
+        input[type="radio"]:checked + .option-label { background: #e3f2fd; border-color: #1a237e; font-weight: 600; color: #1a237e; }
+        input[type="radio"] { display: none; }
+
+        /* Palette Styling */
+        .palette-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; margin-top: 10px; }
+        .palette-btn { width: 40px; height: 40px; border-radius: 50%; border: 2px solid #dee2e6; background: #fff; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 0.9rem; }
+        .palette-btn.answered { background: #2e7d32; color: white; border-color: #2e7d32; }
+        .palette-btn.not-answered { background: #ff9800; color: white; border-color: #ff9800; }
+        .palette-btn.not-visited { background: #e0e0e0; color: #6c757d; }
+        .palette-btn.current { border: 3px solid #1a237e; transform: scale(1.1); }
+        .palette-legend { font-size: 0.8rem; margin-top: 20px; display: flex; flex-direction: column; gap: 8px; }
+        .legend-item { display: flex; align-items: center; gap: 8px; }
+        .legend-color { width: 15px; height: 15px; border-radius: 50%; }
+
+        /* Results Screen */
+        .results-screen { padding: 40px; text-align: center; }
+        .score-circle { width: 150px; height: 150px; border-radius: 50%; border: 8px solid #1a237e; display: flex; flex-direction: column; align-items: center; justify-content: center; margin: 0 auto 30px; }
+        .score-circle h1 { margin: 0; font-size: 3rem; color: #1a237e; font-weight: bold; }
+        .score-circle p { margin: 0; color: #6c757d; font-weight: 600; }
+        .review-card { text-align: left; background: #f8f9fa; border-left: 5px solid #dee2e6; padding: 15px; margin-bottom: 15px; border-radius: 5px; }
+        .review-card.correct { border-left-color: #2e7d32; background: #e8f5e9; }
+        .review-card.incorrect { border-left-color: #c62828; background: #ffebee; }
+        .review-card.skipped { border-left-color: #ff9800; background: #fff3e0; }
     </style>
 </head>
 <body>
 
-<div class="container mt-4 mb-5">
-    <div class="card p-4 shadow-sm" id="main-card">
-        <h2 class="mb-3">🎯 AI Exam Hall (External)</h2>
+<div class="container-fluid px-0">
+    <div class="exam-container">
         
         <!-- SETUP SCREEN -->
-        <div id="setup-screen">
-            <div class="alert alert-warning"><strong>Strict Proctoring Active:</strong> Webcam must remain on. Tab switching will auto-submit the exam.</div>
+        <div id="setup-screen" class="p-5 text-center">
+            <h2 class="mb-4">🎯 Professional Exam Hall</h2>
+            <p class="text-muted mb-4">Upload your question text file or paste the questions below.</p>
             
-            <div class="row g-3 mb-4">
+            <div class="row justify-content-center">
                 <div class="col-md-6">
-                    <label class="fw-bold">1. Upload Book / PDF</label>
-                    <input type="file" id="pdf-input" class="form-control" accept=".pdf" onchange="extractPdfText(this)">
-                </div>
-                <div class="col-md-6">
-                    <label class="fw-bold">2. Admit Card (Verification)</label>
-                    <input type="file" id="admit-card" class="form-control" accept="image/*" onchange="showAdmitCard(this)">
+                    <div class="card p-4 shadow-sm mb-3">
+                        <h5>Option 1: Upload .txt File</h5>
+                        <input type="file" id="file-input" class="form-control" accept=".txt" onchange="loadFile(this)">
+                    </div>
+                    <div class="card p-4 shadow-sm mb-3">
+                        <h5>Option 2: Paste Text</h5>
+                        <textarea id="text-input" class="form-control" rows="8" placeholder="Paste your questions here..."></textarea>
+                        <button class="btn btn-primary mt-3" onclick="startFromText()">Start Exam</button>
+                    </div>
                 </div>
             </div>
-
-            <div class="row g-3 mb-4">
-                <div class="col-md-4">
-                    <label class="fw-bold">Number of Questions</label>
-                    <input type="number" id="num-qs" class="form-control" value="5" min="1" max="20">
-                </div>
-                <div class="col-md-4">
-                    <label class="fw-bold">Candidate Photo</label>
-                    <button class="btn btn-outline-danger w-100" onclick="capturePhoto()">📷 Capture Face</button>
-                    <span id="photo-status" class="text-muted small mt-1 d-block">Not captured</span>
-                </div>
-                <div class="col-md-4 d-flex align-items-end">
-                    <button class="btn btn-primary w-100 btn-lg" onclick="startExam()" id="btn-start" disabled>Start Exam</button>
-                </div>
+            <div class="mt-4">
+                <p class="text-muted small"><strong>Format:</strong> Use `#SECTION: Name`, `Q1: ...`, `A) ...`, `ANS: A`, `EXPLANATION: ...`</p>
             </div>
-        </div>
-
-        <!-- LOADING -->
-        <div id="loading-screen" style="display:none;" class="text-center py-5">
-            <div class="spinner-border text-primary mb-3" style="width: 3rem; height: 3rem;"></div>
-            <h4>AI is framing your paper...</h4>
         </div>
 
         <!-- EXAM SCREEN -->
-        <div id="exam-screen" style="display:none;">
-            <div id="timer-bar">
-                <div>⏱️ Time Left: <span id="timer-display">45:00</span></div>
-                <div id="proctor-status" class="fw-bold text-success">🟢 Face Detected</div>
-                <button class="btn btn-sm btn-danger" onclick="submitExam()">Submit Exam</button>
+        <div id="exam-screen" style="display: none;">
+            <div class="exam-header">
+                <div class="exam-title">🎯 AI Exam Hall (Offline Mode)</div>
+                <div class="timer-box" id="timer-box">
+                    ⏱️ <span id="timer-display">45:00</span>
+                </div>
+                <button class="btn btn-danger btn-sm" onclick="submitExam()">Submit Exam</button>
             </div>
-            <div id="questions-container" class="mt-4"></div>
-            <button class="btn btn-success w-100 mt-3 mb-5" onclick="submitExam()">Final Submit</button>
+            
+            <div class="exam-body">
+                <div class="question-area" id="question-area">
+                    <!-- Questions rendered here -->
+                </div>
+                
+                <div class="palette-area">
+                    <h6 class="text-center fw-bold mb-2">Question Palette</h6>
+                    <div class="palette-grid" id="palette-grid">
+                        <!-- Buttons rendered here -->
+                    </div>
+                    
+                    <div class="palette-legend mt-auto">
+                        <div class="legend-item"><div class="legend-color" style="background: #2e7d32;"></div> Answered</div>
+                        <div class="legend-item"><div class="legend-color" style="background: #ff9800;"></div> Not Answered</div>
+                        <div class="legend-item"><div class="legend-color" style="background: #e0e0e0;"></div> Not Visited</div>
+                    </div>
+                    
+                    <div class="mt-3 text-center">
+                        <button class="btn btn-outline-secondary btn-sm w-100 mb-2" onclick="prevQuestion()">Previous</button>
+                        <button class="btn btn-primary btn-sm w-100" onclick="nextQuestion()">Save & Next</button>
+                    </div>
+                </div>
+            </div>
         </div>
 
         <!-- RESULTS SCREEN -->
-        <div id="results-screen" style="display:none;">
-            <h3 class="text-center text-success">Exam Completed!</h3>
-            <h1 class="text-center display-1 fw-bold" id="result-score">0/0</h1>
-            <div id="results-detailed" class="mt-4"></div>
-            <div class="text-center mt-4"><a href="https://umadivy500.pythonanywhere.com" class="btn btn-primary">Return to Main App</a></div>
+        <div id="results-screen" class="results-screen" style="display: none;">
+            <div class="score-circle">
+                <h1 id="final-score">0</h1>
+                <p>/ <span id="total-questions">0</span></p>
+            </div>
+            <h3 class="mb-4" id="result-message">Exam Completed</h3>
+            <div class="text-start" id="review-container">
+                <!-- Review cards rendered here -->
+            </div>
+            <button class="btn btn-primary mt-4" onclick="location.reload()">Take Another Exam</button>
         </div>
+
     </div>
 </div>
 
-<video id="camera-feed" autoplay muted></video>
-
 <script>
-// Set PDF.js worker
-pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
-
-let currentQuestions = [];
-let extractedText = "";
+let questions = [];
+let currentIndex = 0;
+let userAnswers = {};
 let timerInterval = null;
-let timeLeft = 45 * 60;
-let tabSwitchCount = 0;
-let faceCheckInterval = null;
-let faceMissingCount = 0;
+let timeLeft = 45 * 60; // 45 minutes
 let isExamActive = false;
 
-const video = document.getElementById('camera-feed');
-const canvas = document.createElement('canvas');
-const ctx = canvas.getContext('2d');
+// --- 1. PARSING LOGIC ---
+function parseQuestions(text) {
+    const lines = text.split('\n');
+    let parsedQuestions = [];
+    let currentSection = "General";
+    let currentQ = null;
 
-// 1. Extract Text Client-Side
-async function extractPdfText(input) {
-    if (!input.files[0]) return;
-    let file = input.files[0];
-    let reader = new FileReader();
-    reader.onload = async function(e) {
-        let typedarray = new Uint8Array(e.target.result);
-        let pdf = await pdfjsLib.getDocument(typedarray).promise;
-        extractedText = "";
-        for (let i = 1; i <= Math.min(5, pdf.numPages); i++) {
-            let page = await pdf.getPage(i);
-            let textContent = await page.getTextContent();
-            extractedText += textContent.items.map(s => s.str).join(" ") + "\\n";
-        }
-        document.getElementById('pdf-input').classList.add('is-valid');
-        checkReady();
-    };
-    reader.readAsArrayBuffer(file);
-}
+    lines.forEach(line => {
+        line = line.trim();
+        if (!line) return;
 
-// 2. Webcam & Proctoring
-document.addEventListener('DOMContentLoaded', async () => {
-    try {
-        let stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
-        video.srcObject = stream;
-    } catch(e) { alert("Webcam required."); }
-
-    document.addEventListener("visibilitychange", () => {
-        if (document.hidden && isExamActive) {
-            tabSwitchCount++;
-            playBeep();
-            alert(`⚠️ WARNING: Tab switching detected! (${tabSwitchCount}/2). Auto-submit on next violation.`);
-            if (tabSwitchCount >= 2) submitExam();
+        if (line.startsWith('#SECTION:')) {
+            currentSection = line.replace('#SECTION:', '').trim();
+        } else if (line.startsWith('Q')) {
+            // New question
+            if (currentQ) parsedQuestions.push(currentQ);
+            currentQ = {
+                section: currentSection,
+                question: line.substring(line.indexOf(':') + 1).trim(),
+                options: [],
+                answer: "",
+                explanation: ""
+            };
+        } else if (line.match(/^[A-E]\)/)) {
+            if (currentQ) currentQ.options.push(line.substring(2).trim());
+        } else if (line.startsWith('ANS:')) {
+            if (currentQ) currentQ.answer = line.replace('ANS:', '').trim().toUpperCase();
+        } else if (line.startsWith('EXPLANATION:')) {
+            if (currentQ) currentQ.explanation = line.replace('EXPLANATION:', '').trim();
         }
     });
-});
-
-function playBeep() {
-    try {
-        let ctx = new (window.AudioContext || window.webkitAudioContext)();
-        let osc = ctx.createOscillator();
-        osc.type = 'sine';
-        osc.frequency.setValueAtTime(800, ctx.currentTime);
-        osc.connect(ctx.destination);
-        osc.start();
-        osc.stop(ctx.currentTime + 0.2);
-    } catch(e){}
-}
-
-function checkFace() {
-    if (!isExamActive || video.paused || video.ended) return;
-    canvas.width = 40; canvas.height = 30;
-    ctx.drawImage(video, 0, 0, 40, 30);
-    let frame = ctx.getImageData(0, 0, 40, 30);
-    let data = frame.data;
-    let variance = 0;
-    for(let i=0; i<data.length; i+=4) { variance += Math.abs(data[i] - data[i+4]); }
+    if (currentQ) parsedQuestions.push(currentQ);
     
-    if (variance < 100) {
-        faceMissingCount++;
-        if (faceMissingCount > 3) {
-            document.getElementById('proctor-status').innerText = '🔴 NO FACE DETECTED!';
-            document.getElementById('proctor-status').className = 'fw-bold text-danger';
-            document.getElementById('main-card').classList.add('warning-flash');
-            playBeep();
-        }
-    } else {
-        faceMissingCount = 0;
-        document.getElementById('proctor-status').innerText = '🟢 Face Detected';
-        document.getElementById('proctor-status').className = 'fw-bold text-success';
-        document.getElementById('main-card').classList.remove('warning-flash');
-    }
+    // Assign IDs
+    return parsedQuestions.map((q, i) => ({ ...q, id: i }));
 }
 
-function showAdmitCard(input) {
-    if (input.files && input.files[0]) {
-        document.getElementById('admit-card').classList.add('is-valid');
-        checkReady();
-    }
+function loadFile(input) {
+    if (!input.files[0]) return;
+    let reader = new FileReader();
+    reader.onload = function(e) {
+        let text = e.target.result;
+        questions = parseQuestions(text);
+        if (questions.length > 0) startExam();
+        else alert("Could not parse questions. Check the format.");
+    };
+    reader.readAsText(input.files[0]);
 }
 
-function capturePhoto() {
-    canvas.width = 200; canvas.height = 200;
-    ctx.drawImage(video, 0, 0, 200, 200);
-    document.getElementById('photo-status').innerText = "✅ Photo Captured";
-    document.getElementById('photo-status').className = "text-success small mt-1 d-block";
-    checkReady();
+function startFromText() {
+    let text = document.getElementById('text-input').value;
+    if (!text.trim()) return alert("Please paste questions first.");
+    questions = parseQuestions(text);
+    if (questions.length > 0) startExam();
+    else alert("Could not parse questions. Check the format.");
 }
 
-function checkReady() {
-    let pdf = document.getElementById('pdf-input').classList.contains('is-valid');
-    let admit = document.getElementById('admit-card').classList.contains('is-valid');
-    let photo = document.getElementById('photo-status').innerText.includes('✅');
-    document.getElementById('btn-start').disabled = !(pdf && admit && photo);
-}
-
-// 3. Start Exam
-async function startExam() {
+// --- 2. EXAM LOGIC ---
+function startExam() {
     document.getElementById('setup-screen').style.display = 'none';
-    document.getElementById('loading-screen').style.display = 'block';
+    document.getElementById('exam-screen').style.display = 'block';
     isExamActive = true;
+    currentIndex = 0;
 
-    let numQs = parseInt(document.getElementById('num-qs').value);
+    // Initialize palette
+    let palette = document.getElementById('palette-grid');
+    palette.innerHTML = questions.map((q, i) => 
+        `<button class="palette-btn not-visited" id="pal-${i}" onclick="jumpToQuestion(${i})">${i+1}</button>`
+    ).join('');
 
-    try {
-        let res = await fetch('https://umadivy500.pythonanywhere.com/api/exam-generate-questions', {
-            method: 'POST',
-            headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({ text: extractedText, num_qs: numQs })
-        });
-        let data = await res.json();
-        if(data.error) throw new Error(data.error);
-        
-        currentQuestions = data.questions;
-        renderExam();
-    } catch(e) {
-        alert("Failed: " + e.message);
-        location.reload();
+    renderQuestion(0);
+    startTimer();
+}
+
+function renderQuestion(index) {
+    currentIndex = index;
+    let q = questions[index];
+    let area = document.getElementById('question-area');
+    
+    // Mark current palette button
+    document.querySelectorAll('.palette-btn').forEach(b => b.classList.remove('current'));
+    document.getElementById(`pal-${index}`).classList.add('current');
+    updatePaletteColor(index);
+
+    let optionsHtml = q.options.map((opt, i) => {
+        let letter = String.fromCharCode(65 + i);
+        let isChecked = userAnswers[q.id] === letter ? 'checked' : '';
+        return `
+            <label class="w-100">
+                <input type="radio" name="q_${q.id}" value="${letter}" ${isChecked} onchange="saveAnswer(${q.id}, '${letter}')">
+                <div class="option-label">${letter}) ${opt}</div>
+            </label>
+        `;
+    }).join('');
+
+    area.innerHTML = `
+        <div class="section-title">${q.section}</div>
+        <div class="question-text">Q${index + 1}. ${q.question}</div>
+        <div class="options">${optionsHtml}</div>
+    `;
+}
+
+function saveAnswer(qId, answer) {
+    userAnswers[qId] = answer;
+    updatePaletteColor(currentIndex);
+}
+
+function updatePaletteColor(index) {
+    let q = questions[index];
+    let btn = document.getElementById(`pal-${index}`);
+    if (!btn) return;
+
+    if (userAnswers[q.id]) {
+        btn.className = 'palette-btn answered current';
+    } else {
+        btn.className = 'palette-btn not-answered current';
     }
 }
 
-function renderExam() {
-    document.getElementById('loading-screen').style.display = 'none';
-    document.getElementById('exam-screen').style.display = 'block';
+function jumpToQuestion(index) {
+    renderQuestion(index);
+}
 
-    document.getElementById('questions-container').innerHTML = currentQuestions.map((q, i) => `
-        <div class="question-card">
-            <h5 class="fw-bold">Q${i+1}. ${q.question}</h5>
-            <div class="options mt-3">
-                ${q.options && q.options.length ? q.options.map((opt, oi) => `
-                    <label class="w-100">
-                        <input type="radio" name="q_${i}" value="${String.fromCharCode(65+oi)}" style="display:none;">
-                        <span class="option-label">${String.fromCharCode(65+oi)}) ${opt}</span>
-                    </label>
-                `).join('') : ''}
-            </div>
-        </div>
-    `).join('');
+function nextQuestion() {
+    if (currentIndex < questions.length - 1) renderQuestion(currentIndex + 1);
+}
 
-    faceCheckInterval = setInterval(checkFace, 1000);
+function prevQuestion() {
+    if (currentIndex > 0) renderQuestion(currentIndex - 1);
+}
 
+// --- 3. TIMER & SUBMIT ---
+function startTimer() {
+    if (timerInterval) clearInterval(timerInterval);
     timerInterval = setInterval(() => {
-        if (timeLeft <= 0) { clearInterval(timerInterval); submitExam(); }
+        if (timeLeft <= 0) {
+            clearInterval(timerInterval);
+            submitExam(true); // Auto-submit
+            return;
+        }
         timeLeft--;
         let m = Math.floor(timeLeft / 60).toString().padStart(2, '0');
         let s = (timeLeft % 60).toString().padStart(2, '0');
         document.getElementById('timer-display').innerText = `${m}:${s}`;
+
+        if (timeLeft < 300) { // Last 5 minutes
+            document.getElementById('timer-box').classList.add('warning');
+        }
     }, 1000);
 }
 
-// 4. Submit & Sync to Main App
-async function submitExam() {
+function submitExam(isAuto = false) {
+    if (!isAuto) {
+        if (!confirm("Are you sure you want to submit the exam?")) return;
+    }
     clearInterval(timerInterval);
-    clearInterval(faceCheckInterval);
     isExamActive = false;
     document.getElementById('exam-screen').style.display = 'none';
-    document.getElementById('results-screen').style.display = 'block';
+    showResults();
+}
+
+// --- 4. RESULTS ---
+function showResults() {
+    let resultsScreen = document.getElementById('results-screen');
+    resultsScreen.style.display = 'block';
 
     let score = 0;
-    let detailedHtml = '';
+    let reviewHtml = '';
 
-    currentQuestions.forEach((q, i) => {
-        let selectedEl = document.querySelector(`input[name="q_${i}"]:checked`);
-        let userAns = selectedEl ? selectedEl.value : "Skipped";
-        let correct = (q.correct_answer || "").toUpperCase();
-        if(userAns === correct) score++;
+    questions.forEach((q, i) => {
+        let userAns = userAnswers[q.id] || "Not Answered";
+        let isCorrect = userAns === q.answer;
+        if (isCorrect) score++;
 
-        detailedHtml += `
-            <div class="card mb-2 p-3 ${userAns === correct ? 'border-success' : 'border-danger'}">
-                <h6 class="fw-bold">Q${i+1}. ${q.question}</h6>
-                <div class="text-${userAns === correct?'success':'danger'} small">Your Ans: ${userAns}</div>
-                <div class="text-success small">Correct: ${q.correct_answer}</div>
-                <div class="text-muted small"><i>${q.explanation || ''}</i></div>
-            </div>`;
+        let statusClass = isCorrect ? 'correct' : (userAns === "Not Answered" ? 'skipped' : 'incorrect');
+        
+        reviewHtml += `
+            <div class="review-card ${statusClass}">
+                <div class="d-flex justify-content-between">
+                    <strong>Q${i+1}. ${q.question}</strong>
+                    <span class="badge ${isCorrect ? 'bg-success' : (userAns === 'Not Answered' ? 'bg-warning' : 'bg-danger')}">${isCorrect ? 'Correct' : (userAns === 'Not Answered' ? 'Skipped' : 'Wrong')}</span>
+                </div>
+                <div class="mt-2">
+                    <div>Your Answer: <strong>${userAns}</strong></div>
+                    <div>Correct Answer: <strong>${q.answer}</strong></div>
+                    <div class="text-muted small mt-1"><i>${q.explanation || ''}</i></div>
+                </div>
+            </div>
+        `;
     });
 
-    document.getElementById('result-score').innerText = `${score} / ${currentQuestions.length}`;
-    document.getElementById('results-detailed').innerHTML = detailedHtml;
-
-    // Sync to Main PythonAnywhere App
-    try {
-        await fetch('https://umadivy500.pythonanywhere.com/api/exam-save-result', {
-            method: 'POST',
-            headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({ score: score, total: currentQuestions.length, time_taken: (45*60) - timeLeft })
-        });
-        console.log("Result synced to cloud");
-    } catch(e) { console.log("Sync failed", e); }
-
-    if(video.srcObject) { video.srcObject.getTracks().forEach(t => t.stop()); video.style.display = 'none'; }
+    document.getElementById('final-score').innerText = score;
+    document.getElementById('total-questions').innerText = questions.length;
+    document.getElementById('review-container').innerHTML = reviewHtml;
+    
+    let percentage = (score / questions.length) * 100;
+    document.getElementById('result-message').innerText = percentage >= 50 ? "Congratulations! You Passed." : "Keep Practicing. You will get there.";
 }
 </script>
+
 </body>
 </html>
