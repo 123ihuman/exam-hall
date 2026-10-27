@@ -9,21 +9,19 @@
         :root { --primary: #1a237e; --secondary: #c62828; --bg: #e9ecef; }
         body { background: var(--bg); font-family: 'Segoe UI', Arial, sans-serif; user-select: none; }
         
-        /* Header */
         .top-bar { background: var(--primary); color: #fff; padding: 10px 20px; display: flex; justify-content: space-between; align-items: center; border-bottom: 4px solid var(--secondary); }
         .logo-text { font-size: 1.5rem; font-weight: 900; letter-spacing: 2px; }
-        
-        /* Layouts */
         .screen-box { max-width: 1000px; margin: 30px auto; background: #fff; padding: 30px; border-radius: 10px; box-shadow: 0 5px 20px rgba(0,0,0,0.1); }
         
-        /* Exam UI */
         #exam-wrapper { display: none; height: 100vh; flex-direction: column; background: #fff; }
         .exam-header { background: #2c3e50; color: white; padding: 8px 15px; display: flex; justify-content: space-between; align-items: center; }
         .exam-main { display: flex; flex: 1; overflow: hidden; }
         .q-area { flex: 1; padding: 20px; overflow-y: auto; }
         .p-area { width: 280px; background: #f1f3f5; border-left: 1px solid #ddd; display: flex; flex-direction: column; padding: 10px; }
         
-        /* Palette */
+        /* Fixed Question Text to maintain line breaks for Matching */
+        .q-text { font-size: 1.1rem; font-weight: 600; margin-bottom: 20px; line-height: 1.6; white-space: pre-wrap; }
+
         .palette-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; flex: 1; overflow-y: auto; align-content: start; }
         .p-btn { width: 100%; aspect-ratio: 1; border: 1px solid #ced4da; border-radius: 5px; display: flex; align-items: center; justify-content: center; font-weight: bold; cursor: pointer; background: #e9ecef; }
         .p-btn.not-answered { background: #ff9800; color: #fff; }
@@ -32,15 +30,12 @@
         .p-btn.marked-answered { background: #9c27b0; color: #fff; border: 3px solid #4caf50; }
         .p-btn.current { outline: 3px solid #000; }
         
-        /* Option Styles */
         .option-label { display: block; padding: 10px 15px; border: 1px solid #ced4da; border-radius: 5px; margin-bottom: 8px; cursor: pointer; background: #fff; }
         input[type="radio"]:checked + .option-label, input[type="checkbox"]:checked + .option-label { background: #e3f2fd; border-color: var(--primary); font-weight: bold; }
         input[type="radio"], input[type="checkbox"] { display: none; }
 
-        /* Camera */
         #cam-feed { position: fixed; bottom: 10px; right: 10px; width: 150px; border-radius: 10px; border: 3px solid var(--secondary); z-index: 1000; transform: scaleX(-1); display: none; }
         
-        /* Result Card */
         .result-header { text-align: center; border-bottom: 2px dashed #ccc; padding-bottom: 15px; margin-bottom: 20px; }
         .candidate-info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; font-size: 0.95rem; margin-bottom: 20px; background: #f8f9fa; padding: 15px; border-radius: 8px; }
         .score-table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
@@ -55,7 +50,6 @@
 </head>
 <body>
 
-<!-- WARNING OVERLAY -->
 <div id="warning-overlay" class="warning-overlay">
     <h1>⚠️ WARNING ⚠️</h1>
     <h3>Tab switching detected! The system has logged this activity.</h3>
@@ -73,16 +67,13 @@
 <!-- ================= STEP 1: ADMIN PANEL ================= -->
 <div id="admin-screen" class="screen-box">
     <h3 class="mb-4 border-bottom pb-2">Admin Panel: Manage Question Papers</h3>
-    
     <div class="row mb-4">
         <div class="col-md-5">
             <div class="card p-3 shadow-sm">
                 <h5>Create New Paper</h5>
                 <input type="text" id="paper-name" class="form-control mb-2" placeholder="Paper Name (e.g. SSC CGL 2024)">
-                
                 <label class="small fw-bold">Exam Start Time (Strict Entry)</label>
                 <input type="datetime-local" id="paper-time" class="form-control mb-2">
-                
                 <textarea id="paper-text" class="form-control mb-2" rows="4" placeholder="Paste questions here..."></textarea>
                 <input type="file" id="paper-file" class="form-control mb-2" accept=".txt" onchange="loadFileText(this)">
                 <button class="btn btn-primary w-100" onclick="savePaper()">Save Paper</button>
@@ -95,7 +86,6 @@
             </div>
         </div>
     </div>
-    
     <div class="text-end">
         <button class="btn btn-success btn-lg" onclick="showScreen('register-screen')">Go to Student Registration ➔</button>
     </div>
@@ -104,20 +94,18 @@
 <!-- ================= STEP 2: STUDENT REGISTRATION ================= -->
 <div id="register-screen" class="screen-box" style="display: none;">
     <h3 class="mb-4 border-bottom pb-2">Candidate Registration & Verification</h3>
-    
     <div class="mb-3 bg-light p-2 rounded border">
         <label class="fw-bold small">Load Saved Candidate:</label>
         <select id="saved-candidates" class="form-select form-select-sm" onchange="loadCandidate(this.value)">
             <option value="">-- New Candidate --</option>
         </select>
     </div>
-
     <div class="row">
         <div class="col-md-7">
             <div class="row g-3">
-                <div class="col-md-6"><label class="small fw-bold">Full Name</label><input type="text" id="reg-name" class="form-control" placeholder="Candidate Name"></div>
+                <div class="col-md-6"><label class="small fw-bold">Full Name</label><input type="text" id="reg-name" class="form-control"></div>
                 <div class="col-md-6"><label class="small fw-bold">Father's Name</label><input type="text" id="reg-father" class="form-control"></div>
-                <div class="col-md-6"><label class="small fw-bold">Roll Number</label><input type="text" id="reg-roll" class="form-control" placeholder="e.g. JM2024001"></div>
+                <div class="col-md-6"><label class="small fw-bold">Roll Number</label><input type="text" id="reg-roll" class="form-control"></div>
                 <div class="col-md-6"><label class="small fw-bold">Date of Birth</label><input type="date" id="reg-dob" class="form-control"></div>
                 <div class="col-md-6"><label class="small fw-bold">Gender</label><select id="reg-gender" class="form-select"><option>Male</option><option>Female</option><option>Other</option></select></div>
                 <div class="col-md-6"><label class="small fw-bold">Select Paper</label><select id="reg-paper-select" class="form-select" onchange="checkSlot()"></select></div>
@@ -137,14 +125,11 @@
             </div>
         </div>
     </div>
-    
     <div id="slot-msg" class="alert alert-danger mt-3" style="display:none;">⚠️ Entry Closed! The exam slot time has passed.</div>
-
     <div class="form-check mt-4">
         <input class="form-check-input" type="checkbox" id="reg-agree">
         <label class="form-check-label fw-bold text-danger" for="reg-agree">I agree to the terms. Any malpractice (tab switching) will lead to disqualification.</label>
     </div>
-    
     <div class="text-end mt-3">
         <button class="btn btn-primary btn-lg" onclick="startExamFlow()" id="btn-start-exam">Start Exam ➔</button>
     </div>
@@ -161,14 +146,13 @@
         <div id="ui-warnings" class="text-warning fw-bold small">Violations: 0</div>
         <button class="btn btn-danger fw-bold" onclick="submitExam(false)">SUBMIT</button>
     </div>
-    
     <div class="exam-main">
         <div class="q-area">
             <div class="text-muted small mb-2 text-uppercase fw-bold" id="ui-section">SECTION</div>
-            <div class="fs-5 mb-4 fw-bold" id="ui-question">Question...</div>
+            <!-- ADDED white-space: pre-wrap to the q-text class above -->
+            <div class="q-text" id="ui-question">Question...</div>
             <div id="ui-options"></div>
         </div>
-        
         <div class="p-area">
             <div class="palette-grid" id="ui-palette"></div>
             <div class="mt-3">
@@ -192,7 +176,6 @@
         <h2 class="fw-bold mb-0">JOB MACHINE</h2>
         <h5>Official Scorecard / Result</h5>
     </div>
-    
     <div class="candidate-info-grid">
         <div><strong>Candidate Name:</strong> <span id="res-name"></span></div>
         <div><strong>Roll Number:</strong> <span id="res-roll"></span></div>
@@ -201,7 +184,6 @@
         <div><strong>Gender:</strong> <span id="res-gender"></span></div>
         <div><strong>Exam Name:</strong> <span id="res-exam"></span></div>
     </div>
-    
     <table class="score-table">
         <thead>
             <tr><th>Total Qs</th><th>Correct</th><th>Wrong</th><th>Unattempted</th><th>Final Score</th></tr>
@@ -216,25 +198,21 @@
             </tr>
         </tbody>
     </table>
-
     <div class="text-center mb-4">
         <div class="pass-badge pass" id="res-status">PASSED</div>
         <div class="mt-2 text-muted small">Cut-off Marks: <span id="res-cutoff">0</span></div>
     </div>
-
     <div class="d-flex justify-content-between mb-3">
         <h5 class="border-bottom pb-2 mb-0">Detailed Review</h5>
         <button class="btn btn-sm btn-outline-primary" onclick="retryExam()">🔄 Retry Exam</button>
     </div>
     <div id="res-review" style="max-height: 300px; overflow-y: auto;"></div>
-
     <div class="text-center mt-4">
         <button class="btn btn-primary px-5" onclick="location.reload()">Finish & Exit</button>
     </div>
 </div>
 
 <script>
-// --- STATE VARIABLES ---
 let savedPapers = JSON.parse(localStorage.getItem('jm_papers')) || {};
 let savedCandidates = JSON.parse(localStorage.getItem('jm_candidates')) || [];
 let currentQuestions = [];
@@ -248,13 +226,11 @@ let negativeMark = 0;
 let candidate = {};
 let finalCutOff = 0; 
 let cheatWarnings = 0;
-let currentExamTimeStamp = null;
 
 const video = document.getElementById('cam-feed');
 const canvas = document.createElement('canvas');
 const ctx = canvas.getContext('2d');
 
-// --- AUDIO BEEP ---
 function playBeep() {
     try {
         let audioCtx = new (window.AudioContext || window.webkitAudioContext)();
@@ -267,7 +243,6 @@ function playBeep() {
     } catch(e) {}
 }
 
-// --- NAVIGATION ---
 function showScreen(id) {
     document.querySelectorAll('.screen-box').forEach(el => el.style.display = 'none');
     document.getElementById('exam-wrapper').style.display = 'none';
@@ -275,24 +250,19 @@ function showScreen(id) {
     else document.getElementById(id).style.display = 'block';
 }
 
-// --- 1. ADMIN: MANAGE PAPERS ---
+// --- 1. ADMIN ---
 function renderPaperList() {
     let ul = document.getElementById('paper-list');
     let sel = document.getElementById('reg-paper-select');
-    ul.innerHTML = '';
-    sel.innerHTML = '<option value="">-- Select Paper --</option>';
-    
+    ul.innerHTML = ''; sel.innerHTML = '<option value="">-- Select Paper --</option>';
     let keys = Object.keys(savedPapers);
     if(keys.length === 0) { ul.innerHTML = '<li class="list-group-item text-muted">No papers saved yet.</li>'; return; }
     
     keys.forEach(k => {
         let timeStr = savedPapers[k].slotTime ? new Date(savedPapers[k].slotTime).toLocaleString() : 'No fixed time';
-        ul.innerHTML += `
-            <li class="list-group-item d-flex justify-content-between align-items-center">
-                <div><strong>${k}</strong> <br><small class="text-muted">Start: ${timeStr}</small></div>
-                <button class="btn btn-sm btn-outline-danger" onclick="deletePaper('${k}')">🗑</button>
-            </li>
-        `;
+        ul.innerHTML += `<li class="list-group-item d-flex justify-content-between align-items-center">
+            <div><strong>${k}</strong> <br><small class="text-muted">Start: ${timeStr}</small></div>
+            <button class="btn btn-sm btn-outline-danger" onclick="deletePaper('${k}')">🗑</button></li>`;
         sel.innerHTML += `<option value="${k}">${k}</option>`;
     });
 }
@@ -315,111 +285,88 @@ function savePaper() {
     
     savedPapers[name] = { questions: parsedQs, slotTime: time ? new Date(time).getTime() : null };
     localStorage.setItem('jm_papers', JSON.stringify(savedPapers));
-    document.getElementById('paper-name').value = '';
-    document.getElementById('paper-text').value = '';
+    document.getElementById('paper-name').value = ''; document.getElementById('paper-text').value = '';
     renderPaperList();
     alert(`✅ Paper "${name}" saved!`);
 }
 
 function deletePaper(name) {
     if(!confirm(`Delete paper "${name}"?`)) return;
-    delete savedPapers[name];
-    localStorage.setItem('jm_papers', JSON.stringify(savedPapers));
-    renderPaperList();
+    delete savedPapers[name]; localStorage.setItem('jm_papers', JSON.stringify(savedPapers)); renderPaperList();
 }
 
-// Smart Parser
+// --- FIXED PARSER ---
 function parseTextFile(text) {
-    let qs = [];
-    let lines = text.split('\n');
+    let qs = []; let lines = text.split('\n');
     let section = "General", type = "MCQ", currentQ = null;
 
     lines.forEach(line => {
-        line = line.trim();
+        // FIX: Remove trailing backslashes and trim spaces
+        line = line.trim().replace(/\\$/, '').trim();
         if(!line) return;
+
         if(line.startsWith('SECTION:')) section = line.replace('SECTION:', '').trim();
         else if(line.startsWith('TYPE:')) type = line.replace('TYPE:', '').trim().toUpperCase();
         else if(line.startsWith('Q:')) {
             if(currentQ && currentQ.text) qs.push(currentQ);
             currentQ = { section, type, text: line.replace('Q:', '').trim(), options: [], answer: "", explanation: "" };
         }
-        else if(line.match(/^[A-J]\)/)) { if(currentQ) currentQ.options.push(line.substring(2).trim()); }
-        else if(line.startsWith('ANS:')) { if(currentQ) currentQ.answer = line.replace('ANS:', '').trim().toUpperCase(); }
-        else if(line.startsWith('EXP:')) { if(currentQ) currentQ.explanation = line.replace('EXP:', '').trim(); }
+        else if(line.match(/^[A-J]\)/)) { 
+            if(currentQ) currentQ.options.push(line.substring(2).trim()); 
+        }
+        else if(line.startsWith('ANS:')) { 
+            if(currentQ) currentQ.answer = line.replace('ANS:', '').trim().toUpperCase(); 
+        }
+        else if(line.startsWith('EXP:')) { 
+            if(currentQ) currentQ.explanation = line.replace('EXP:', '').trim(); 
+        }
+        else if (currentQ && currentQ.text && !currentQ.answer) {
+            // If the line is part of the question text (like List-I, List-II)
+            currentQ.text += "\n" + line;
+        }
     });
     if(currentQ && currentQ.text) qs.push(currentQ);
     return qs;
 }
 
-// --- 2. CANDIDATES & REGISTRATION ---
+// --- 2. CANDIDATES ---
 function renderSavedCandidates() {
     let sel = document.getElementById('saved-candidates');
     sel.innerHTML = '<option value="">-- New Candidate --</option>';
-    savedCandidates.forEach((c, i) => {
-        sel.innerHTML += `<option value="${i}">${c.name} (Roll: ${c.roll})</option>`;
-    });
+    savedCandidates.forEach((c, i) => { sel.innerHTML += `<option value="${i}">${c.name} (Roll: ${c.roll})</option>`; });
 }
 
 function loadCandidate(index) {
     if(index === "") return;
     let c = savedCandidates[index];
-    document.getElementById('reg-name').value = c.name;
-    document.getElementById('reg-father').value = c.father;
-    document.getElementById('reg-roll').value = c.roll;
-    document.getElementById('reg-dob').value = c.dob;
+    document.getElementById('reg-name').value = c.name; document.getElementById('reg-father').value = c.father;
+    document.getElementById('reg-roll').value = c.roll; document.getElementById('reg-dob').value = c.dob;
     document.getElementById('reg-gender').value = c.gender;
-    
-    if(c.photo) {
-        document.getElementById('reg-photo-preview').src = c.photo;
-        document.getElementById('reg-photo-preview').style.display = 'inline-block';
-    }
+    if(c.photo) { document.getElementById('reg-photo-preview').src = c.photo; document.getElementById('reg-photo-preview').style.display = 'inline-block'; }
 }
 
 function checkSlot() {
     let paperName = document.getElementById('reg-paper-select').value;
     let btn = document.getElementById('btn-start-exam');
     let msg = document.getElementById('slot-msg');
-    
     if(!paperName || !savedPapers[paperName]) return;
-    
     let slot = savedPapers[paperName].slotTime;
-    if(slot) {
-        let now = Date.now();
-        // Allow entry up to 15 minutes after start time
-        if(now > slot + (15 * 60 * 1000)) {
-            msg.style.display = 'block';
-            btn.disabled = true;
-            return;
-        }
-    }
-    msg.style.display = 'none';
-    btn.disabled = false;
+    if(slot && Date.now() > slot + (15 * 60 * 1000)) { msg.style.display = 'block'; btn.disabled = true; return; }
+    msg.style.display = 'none'; btn.disabled = false;
 }
 
 async function initCamera() {
-    try {
-        let stream = await navigator.mediaDevices.getUserMedia({ video: true });
-        video.srcObject = stream;
-        video.style.display = 'block';
-    } catch(e) { console.log("Camera error:", e); }
+    try { let stream = await navigator.mediaDevices.getUserMedia({ video: true }); video.srcObject = stream; video.style.display = 'block'; } catch(e) {}
 }
 
 function capturePhoto() {
-    canvas.width = 150; canvas.height = 150;
-    ctx.drawImage(video, 0, 0, 150, 150);
+    canvas.width = 150; canvas.height = 150; ctx.drawImage(video, 0, 0, 150, 150);
     let dataURL = canvas.toDataURL('image/jpeg');
-    let img = document.getElementById('reg-photo-preview');
-    img.src = dataURL;
-    img.style.display = 'inline-block';
+    document.getElementById('reg-photo-preview').src = dataURL; document.getElementById('reg-photo-preview').style.display = 'inline-block';
     candidate.photo = dataURL;
 }
 
-function previewAdmit(input) {
-    if(input.files[0]) {
-        candidate.admitCard = input.files[0].name;
-        input.classList.add('is-valid');
-    }
-}
+function previewAdmit(input) { if(input.files[0]) candidate.admitCard = input.files[0].name; }
 
 function startExamFlow() {
     candidate.name = document.getElementById('reg-name').value;
@@ -428,128 +375,72 @@ function startExamFlow() {
     candidate.dob = document.getElementById('reg-dob').value;
     candidate.gender = document.getElementById('reg-gender').value;
     candidate.exam = document.getElementById('reg-paper-select').value;
-    
     let dur = parseInt(document.getElementById('reg-time').value);
     negativeMark = parseFloat(document.getElementById('reg-negative').value);
-    let agreed = document.getElementById('reg-agree').checked;
-
-    if(!candidate.name || !candidate.roll || !candidate.dob || !candidate.exam) return alert("Fill all candidate details.");
+    
+    if(!candidate.name || !candidate.roll || !candidate.dob || !candidate.exam) return alert("Fill all details.");
     if(!candidate.photo) return alert("Photo is mandatory.");
-    if(!agreed) return alert("You must agree to the terms.");
+    if(!document.getElementById('reg-agree').checked) return alert("You must agree to terms.");
 
-    // Save candidate to local storage
     let exists = savedCandidates.find(c => c.roll === candidate.roll);
-    if(!exists) {
-        savedCandidates.push(candidate);
-        localStorage.setItem('jm_candidates', JSON.stringify(savedCandidates));
-    }
+    if(!exists) { savedCandidates.push(candidate); localStorage.setItem('jm_candidates', JSON.stringify(savedCandidates)); }
 
     currentQuestions = savedPapers[candidate.exam].questions;
-    timeLeft = dur * 60;
-    finalCutOff = Math.ceil(currentQuestions.length * 0.4); // 40% passing
-    qAnswers = {}; 
-    qStatus = new Array(currentQuestions.length).fill('not-visited');
-    currentIndex = 0;
-    cheatWarnings = 0;
+    timeLeft = dur * 60; finalCutOff = Math.ceil(currentQuestions.length * 0.4); 
+    qAnswers = {}; qStatus = new Array(currentQuestions.length).fill('not-visited'); currentIndex = 0; cheatWarnings = 0;
 
     document.getElementById('ui-exam-name').innerText = candidate.exam;
     document.getElementById('ui-cand-info').innerText = `Roll: ${candidate.roll} | Name: ${candidate.name}`;
     document.getElementById('ui-warnings').innerText = `Violations: 0`;
     
     showScreen('exam-wrapper');
-    
-    // Request Fullscreen
-    if (document.documentElement.requestFullscreen) {
-        document.documentElement.requestFullscreen().catch(e => console.log("Fullscreen failed"));
-    }
+    if (document.documentElement.requestFullscreen) document.documentElement.requestFullscreen().catch(e => console.log(e));
 
-    renderPalette();
-    loadQuestion(0);
-    startTimer();
-    isExamActive = true;
+    renderPalette(); loadQuestion(0); startTimer(); isExamActive = true;
 }
 
-// --- 3. ANTI-CHEAT & TIMER ---
 function startTimer() {
     if(timerInt) clearInterval(timerInt);
-    updateTimerUI();
     timerInt = setInterval(() => {
-        timeLeft--;
-        updateTimerUI();
-        if(timeLeft <= 0) {
-            clearInterval(timerInt);
-            alert("Time Over! Auto-submitting.");
-            submitExam(true);
-        }
+        timeLeft--; 
+        let h = Math.floor(timeLeft / 3600), m = Math.floor((timeLeft % 3600) / 60), s = timeLeft % 60;
+        document.getElementById('ui-timer').innerText = `${h.toString().padStart(2,'0')}:${m.toString().padStart(2,'0')}:${s.toString().padStart(2,'0')}`;
+        if(timeLeft <= 0) { clearInterval(timerInt); alert("Time Over!"); submitExam(true); }
     }, 1000);
 }
 
-function updateTimerUI() {
-    let h = Math.floor(timeLeft / 3600);
-    let m = Math.floor((timeLeft % 3600) / 60);
-    let s = timeLeft % 60;
-    document.getElementById('ui-timer').innerText = `${h.toString().padStart(2,'0')}:${m.toString().padStart(2,'0')}:${s.toString().padStart(2,'0')}`;
-}
-
-// Tab Switch Detection
 document.addEventListener('visibilitychange', () => {
     if (document.hidden && isExamActive) {
-        cheatWarnings++;
-        document.getElementById('ui-warnings').innerText = `Violations: ${cheatWarnings}`;
-        playBeep();
-        document.getElementById('warning-overlay').style.display = 'flex';
-        
-        if (cheatWarnings >= 3) {
-            alert("Too many violations. Exam auto-submitted.");
-            submitExam(true);
-        }
+        cheatWarnings++; document.getElementById('ui-warnings').innerText = `Violations: ${cheatWarnings}`;
+        playBeep(); document.getElementById('warning-overlay').style.display = 'flex';
+        if (cheatWarnings >= 3) { alert("Too many violations."); submitExam(true); }
     }
 });
 
-function resumeExam() {
-    document.getElementById('warning-overlay').style.display = 'none';
-    if (document.documentElement.requestFullscreen) {
-        document.documentElement.requestFullscreen().catch(e => console.log(e));
-    }
-}
+function resumeExam() { document.getElementById('warning-overlay').style.display = 'none'; if (document.documentElement.requestFullscreen) document.documentElement.requestFullscreen().catch(e => {}); }
 
-// --- 4. EXAM LOGIC ---
 function loadQuestion(index) {
-    currentIndex = index;
-    let q = currentQuestions[index];
+    currentIndex = index; let q = currentQuestions[index];
     if(qStatus[index] === 'not-visited') qStatus[index] = 'not-answered';
-    
     document.getElementById('ui-section').innerText = `${q.section} | ${q.type}`;
     document.getElementById('ui-question').innerText = `Q${index+1}. ${q.text}`;
-    
-    let isMulti = q.type === 'MULTI';
-    let savedAns = qAnswers[index] || [];
-    let html = '';
+    let isMulti = q.type === 'MULTI', savedAns = qAnswers[index] || [], html = '';
 
     q.options.forEach((opt, i) => {
         let letter = String.fromCharCode(65 + i);
         let checked = isMulti ? (savedAns.includes(letter) ? 'checked' : '') : (savedAns === letter ? 'checked' : '');
-        let type = isMulti ? 'checkbox' : 'radio';
-        html += `
-            <label class="w-100">
-                <input type="${type}" name="q_opt" value="${letter}" ${checked} onchange="selectOption('${letter}', ${isMulti})">
-                <div class="option-label">${letter}) ${opt}</div>
-            </label>`;
+        html += `<label class="w-100"><input type="${isMulti ? 'checkbox' : 'radio'}" name="q_opt" value="${letter}" ${checked} onchange="selectOption('${letter}', ${isMulti})"><div class="option-label">${letter}) ${opt}</div></label>`;
     });
-    document.getElementById('ui-options').innerHTML = html;
-    updatePaletteUI();
+    document.getElementById('ui-options').innerHTML = html; updatePaletteUI();
 }
 
 function selectOption(letter, isMulti) {
     if(isMulti) {
         if(!qAnswers[currentIndex]) qAnswers[currentIndex] = [];
         let arr = qAnswers[currentIndex];
-        if(arr.includes(letter)) arr = arr.filter(l => l !== letter);
-        else arr.push(letter);
+        if(arr.includes(letter)) arr = arr.filter(l => l !== letter); else arr.push(letter);
         qAnswers[currentIndex] = arr;
-    } else {
-        qAnswers[currentIndex] = letter;
-    }
+    } else { qAnswers[currentIndex] = letter; }
     
     let hasAns = (isMulti && qAnswers[currentIndex].length > 0) || (!isMulti && qAnswers[currentIndex]);
     if(hasAns) { if(qStatus[currentIndex] !== 'marked-answered') qStatus[currentIndex] = 'answered'; }
@@ -557,143 +448,62 @@ function selectOption(letter, isMulti) {
     updatePaletteUI();
 }
 
-function saveAndNext() {
-    if(currentIndex < currentQuestions.length - 1) loadQuestion(currentIndex + 1);
-    else alert("Last question reached.");
-}
-
-function clearResponse() {
-    delete qAnswers[currentIndex];
-    qStatus[currentIndex] = 'not-answered';
-    loadQuestion(currentIndex);
-}
-
-function markReview() {
-    if(qStatus[currentIndex].includes('marked')) {
-        qStatus[currentIndex] = qAnswers[currentIndex] ? 'answered' : 'not-answered';
-    } else {
-        qStatus[currentIndex] = qAnswers[currentIndex] ? 'marked-answered' : 'marked';
-    }
-    updatePaletteUI();
-}
-
-function renderPalette() {
-    let html = '';
-    for(let i=0; i<currentQuestions.length; i++) {
-        html += `<div class="p-btn not-visited" id="p-${i}" onclick="loadQuestion(${i})">${i+1}</div>`;
-    }
-    document.getElementById('ui-palette').innerHTML = html;
-    updatePaletteUI();
-}
-
+function saveAndNext() { if(currentIndex < currentQuestions.length - 1) loadQuestion(currentIndex + 1); else alert("Last question."); }
+function clearResponse() { delete qAnswers[currentIndex]; qStatus[currentIndex] = 'not-answered'; loadQuestion(currentIndex); }
+function markReview() { if(qStatus[currentIndex].includes('marked')) qStatus[currentIndex] = qAnswers[currentIndex] ? 'answered' : 'not-answered'; else qStatus[currentIndex] = qAnswers[currentIndex] ? 'marked-answered' : 'marked'; updatePaletteUI(); }
+function renderPalette() { let html = ''; for(let i=0; i<currentQuestions.length; i++) html += `<div class="p-btn not-visited" id="p-${i}" onclick="loadQuestion(${i})">${i+1}</div>`; document.getElementById('ui-palette').innerHTML = html; updatePaletteUI(); }
 function updatePaletteUI() {
     let c_ans=0, c_not=0, c_mrk=0, c_nv=0;
     for(let i=0; i<currentQuestions.length; i++) {
-        let btn = document.getElementById(`p-${i}`);
-        if(!btn) continue;
-        btn.className = 'p-btn ' + qStatus[i];
-        if(i === currentIndex) btn.classList.add('current');
-        
-        if(qStatus[i] === 'answered') c_ans++;
-        else if(qStatus[i] === 'not-answered') c_not++;
-        else if(qStatus[i].includes('marked')) c_mrk++;
-        else c_nv++;
+        let btn = document.getElementById(`p-${i}`); if(!btn) continue;
+        btn.className = 'p-btn ' + qStatus[i]; if(i === currentIndex) btn.classList.add('current');
+        if(qStatus[i] === 'answered') c_ans++; else if(qStatus[i] === 'not-answered') c_not++; else if(qStatus[i].includes('marked')) c_mrk++; else c_nv++;
     }
-    document.getElementById('c-ans').innerText = c_ans;
-    document.getElementById('c-not').innerText = c_not;
-    document.getElementById('c-mrk').innerText = c_mrk;
-    document.getElementById('c-nv').innerText = c_nv;
+    document.getElementById('c-ans').innerText = c_ans; document.getElementById('c-not').innerText = c_not; document.getElementById('c-mrk').innerText = c_mrk; document.getElementById('c-nv').innerText = c_nv;
 }
 
-// --- 5. SUBMIT & RESULT ---
 function submitExam(isAuto) {
-    if(!isAuto && !confirm("Are you sure you want to submit?")) return;
-    clearInterval(timerInt);
-    isExamActive = false;
+    if(!isAuto && !confirm("Submit exam?")) return;
+    clearInterval(timerInt); isExamActive = false;
     if(video.srcObject) video.srcObject.getTracks().forEach(t => t.stop());
-    video.style.display = 'none';
-    if (document.fullscreenElement) document.exitFullscreen().catch(e=>{});
+    video.style.display = 'none'; if (document.fullscreenElement) document.exitFullscreen().catch(e=>{});
 
-    let score = 0, correct = 0, wrong = 0, skip = 0;
-    let reviewHtml = '';
-
+    let score = 0, correct = 0, wrong = 0, skip = 0, reviewHtml = '';
     currentQuestions.forEach((q, i) => {
-        let userAns = qAnswers[i] || null;
-        let correctAns = q.answer;
-        let isMulti = q.type === 'MULTI';
-        let isCorrect = false;
-        let displayAns = 'Skipped';
-
+        let userAns = qAnswers[i] || null, correctAns = q.answer, isMulti = q.type === 'MULTI', isCorrect = false, displayAns = 'Skipped';
         if(userAns) {
             if(isMulti) {
-                let uArr = Array.isArray(userAns) ? [...userAns].sort() : [];
-                let cArr = correctAns.split(',').map(s => s.trim()).sort();
-                isCorrect = JSON.stringify(uArr) === JSON.stringify(cArr);
-                displayAns = uArr.join(',');
-            } else {
-                isCorrect = userAns === correctAns;
-                displayAns = userAns;
-            }
+                let uArr = Array.isArray(userAns) ? [...userAns].sort() : [], cArr = correctAns.split(',').map(s => s.trim()).sort();
+                isCorrect = JSON.stringify(uArr) === JSON.stringify(cArr); displayAns = uArr.join(',');
+            } else { isCorrect = userAns === correctAns; displayAns = userAns; }
         }
-
         if(!userAns || (Array.isArray(userAns) && userAns.length === 0)) skip++;
-        else if(isCorrect) { correct++; score += 1; }
-        else { wrong++; score -= negativeMark; }
-
-        reviewHtml += `
-            <div class="border-start border-4 ${isCorrect?'border-success':(displayAns==='Skipped'?'border-warning':'border-danger')} bg-light p-3 mb-2 rounded">
-                <strong>Q${i+1}. ${q.text}</strong><br>
-                <span class="small">Your Ans: <b>${displayAns}</b> | Correct: <b>${correctAns}</b></span>
-                <div class="text-muted small"><i>${q.explanation || ''}</i></div>
-            </div>`;
+        else if(isCorrect) { correct++; score += 1; } else { wrong++; score -= negativeMark; }
+        reviewHtml += `<div class="border-start border-4 ${isCorrect?'border-success':(displayAns==='Skipped'?'border-warning':'border-danger')} bg-light p-3 mb-2 rounded"><strong>Q${i+1}. ${q.text}</strong><br><span class="small">Your Ans: <b>${displayAns}</b> | Correct: <b>${correctAns}</b></span><div class="text-muted small"><i>${q.explanation || ''}</i></div></div>`;
     });
 
-    document.getElementById('res-name').innerText = candidate.name;
-    document.getElementById('res-roll').innerText = candidate.roll;
-    document.getElementById('res-father').innerText = candidate.father;
-    document.getElementById('res-dob').innerText = candidate.dob;
-    document.getElementById('res-gender').innerText = candidate.gender;
-    document.getElementById('res-exam').innerText = candidate.exam;
-    
-    document.getElementById('res-total').innerText = currentQuestions.length;
-    document.getElementById('res-correct').innerText = correct;
-    document.getElementById('res-wrong').innerText = wrong;
-    document.getElementById('res-skip').innerText = skip;
-    document.getElementById('res-score').innerText = score.toFixed(2);
-    document.getElementById('res-cutoff').innerText = finalCutOff + " Marks";
+    document.getElementById('res-name').innerText = candidate.name; document.getElementById('res-roll').innerText = candidate.roll;
+    document.getElementById('res-father').innerText = candidate.father; document.getElementById('res-dob').innerText = candidate.dob;
+    document.getElementById('res-gender').innerText = candidate.gender; document.getElementById('res-exam').innerText = candidate.exam;
+    document.getElementById('res-total').innerText = currentQuestions.length; document.getElementById('res-correct').innerText = correct;
+    document.getElementById('res-wrong').innerText = wrong; document.getElementById('res-skip').innerText = skip;
+    document.getElementById('res-score').innerText = score.toFixed(2); document.getElementById('res-cutoff').innerText = finalCutOff + " Marks";
     document.getElementById('res-review').innerHTML = reviewHtml;
 
     let statusEl = document.getElementById('res-status');
-    if(score >= finalCutOff) {
-        statusEl.className = 'pass-badge pass';
-        statusEl.innerText = 'PASSED (Qualified)';
-    } else {
-        statusEl.className = 'pass-badge fail';
-        statusEl.innerText = 'FAILED (Not Qualified)';
-    }
+    if(score >= finalCutOff) { statusEl.className = 'pass-badge pass'; statusEl.innerText = 'PASSED (Qualified)'; }
+    else { statusEl.className = 'pass-badge fail'; statusEl.innerText = 'FAILED (Not Qualified)'; }
 
-    // Save Progress
     let results = JSON.parse(localStorage.getItem('jm_results')) || [];
-    results.push({
-        roll: candidate.roll,
-        exam: candidate.exam,
-        score: score,
-        date: new Date().toISOString()
-    });
+    results.push({ roll: candidate.roll, exam: candidate.exam, score: score, date: new Date().toISOString() });
     localStorage.setItem('jm_results', JSON.stringify(results));
 
     showScreen('result-screen');
 }
 
-function retryExam() {
-    if(!confirm("Retry this exam? Your previous score is saved.")) return;
-    startExamFlow();
-}
+function retryExam() { if(!confirm("Retry this exam?")) return; startExamFlow(); }
 
-// Initialize
-initCamera();
-renderPaperList();
-renderSavedCandidates();
+initCamera(); renderPaperList(); renderSavedCandidates();
 </script>
 </body>
 </html>
